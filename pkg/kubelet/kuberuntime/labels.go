@@ -113,6 +113,19 @@ func newContainerAnnotations(container *v1.Container, pod *v1.Pod, restartCount 
 		annotations[a.Name] = a.Value
 	}
 
+	windowsPrivilegedAnnotation := "io.microsoft.container.privileged"
+
+	klog.Infof("Checking if pod annotations exist")
+	if pod.Annotations != nil {
+		klog.Infof("Checking if pod annotaions contains %s", windowsPrivilegedAnnotation)
+		if value, ok := pod.Annotations[windowsPrivilegedAnnotation]; ok {
+			klog.Infof("Pod annotations contains %s, value %s", windowsPrivilegedAnnotation, value)
+			annotations[windowsPrivilegedAnnotation] = value
+		} else {
+			klog.Infof("Pod annotations did not contian %s", windowsPrivilegedAnnotation)
+		}
+	}
+
 	annotations[containerHashLabel] = strconv.FormatUint(kubecontainer.HashContainer(container), 16)
 	annotations[containerRestartCountLabel] = strconv.Itoa(restartCount)
 	annotations[containerTerminationMessagePathLabel] = container.TerminationMessagePath
