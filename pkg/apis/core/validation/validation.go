@@ -3308,6 +3308,7 @@ func ValidatePodSpec(spec *core.PodSpec, podMeta *metav1.ObjectMeta, fldPath *fi
 	allErrs = append(allErrs, validatePodDNSConfig(spec.DNSConfig, &spec.DNSPolicy, fldPath.Child("dnsConfig"))...)
 	allErrs = append(allErrs, validateReadinessGates(spec.ReadinessGates, fldPath.Child("readinessGates"))...)
 	allErrs = append(allErrs, validateTopologySpreadConstraints(spec.TopologySpreadConstraints, fldPath.Child("topologySpreadConstraints"))...)
+	allErrs = append(allErrs, ValidateWindowsHostProcessPod(spec)...)
 	if len(spec.ServiceAccountName) > 0 {
 		for _, msg := range ValidateServiceAccountName(spec.ServiceAccountName, false) {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("serviceAccountName"), spec.ServiceAccountName, msg))
@@ -5921,6 +5922,11 @@ func validateWindowsSecurityContextOptions(windowsOptions *core.WindowsSecurityC
 		}
 	}
 
+	return allErrs
+}
+
+func ValidateWindowsHostProcessPod(podSpec *core.PodSpec) field.ErrorList {
+	allErrs := field.ErrorList{}
 	return allErrs
 }
 

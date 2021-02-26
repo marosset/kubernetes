@@ -5579,5 +5579,11 @@ message WindowsSecurityContextOptions {
   // PodSecurityContext, the value specified in SecurityContext takes precedence.
   // +optional
   optional string runAsUserName = 3;
+
+  // HostProcess determines if a container should be run as a 'Host Process' container.
+  // This field is alpha-level and will only be honored by components that enable the
+  // WindowsHostProcessContainers feature flag.
+  // +optional
+  optional bool hostProcess = 4;
 }
 

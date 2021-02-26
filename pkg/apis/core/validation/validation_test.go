@@ -16915,3 +16915,269 @@ func TestValidatePodTemplateSpecSeccomp(t *testing.T) {
 		asserttestify.Equal(t, test.expectedErr, err, "TestCase[%d]: %s", i, test.description)
 	}
 }
+
+func TestValidateWindowsHostProcessPod(t *testing.T) {
+	const containerName = "container"
+	falseVar := false
+	trueVar := true
+
+	testCases := []struct {
+		name           string
+		expectError    bool
+		featureEnabled bool
+		podSpec        *core.PodSpec
+	}{
+		{
+			expectError:    false,
+			featureEnabled: false,
+			podSpec:        &core.PodSpec{},
+		},
+		{
+			expectError:    true,
+			featureEnabled: false,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					WindowsOptions: &core.WindowsSecurityContextOptions{
+						HostProcess: &trueVar,
+					},
+				},
+			},
+		},
+		{
+			expectError:    false,
+			featureEnabled: false,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					WindowsOptions: &core.WindowsSecurityContextOptions{
+						HostProcess: &falseVar,
+					},
+				},
+			},
+		},
+		{
+			expectError:    false,
+			featureEnabled: false,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					WindowsOptions: &core.WindowsSecurityContextOptions{
+						HostProcess: nil,
+					},
+				},
+			},
+		},
+		{
+			expectError:    true,
+			featureEnabled: false,
+			podSpec: &core.PodSpec{
+				Containers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+			},
+		},
+		{
+			expectError:    true,
+			featureEnabled: false,
+			podSpec: &core.PodSpec{
+				InitContainers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+			},
+		},
+		{
+			expectError:    true,
+			featureEnabled: true,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					WindowsOptions: &core.WindowsSecurityContextOptions{
+						HostProcess: &trueVar,
+					},
+				},
+			},
+		},
+		{
+			expectError:    false,
+			featureEnabled: true,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					HostNetwork: true,
+					WindowsOptions: &core.WindowsSecurityContextOptions{
+						HostProcess: &trueVar,
+					},
+				},
+			},
+		},
+		{
+			expectError:    false,
+			featureEnabled: true,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					HostNetwork: true,
+					WindowsOptions: &core.WindowsSecurityContextOptions{
+						HostProcess: &trueVar,
+					},
+				},
+				Containers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+				InitContainers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+			},
+		},
+		{
+			expectError:    false,
+			featureEnabled: true,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					HostNetwork: true,
+				},
+				Containers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+				InitContainers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+			},
+		},
+		{
+			expectError:    true,
+			featureEnabled: true,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					HostNetwork: true,
+				},
+				Containers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+				InitContainers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &falseVar,
+						},
+					},
+				}},
+			},
+		},
+		{
+			expectError:    true,
+			featureEnabled: true,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					HostNetwork: true,
+				},
+				Containers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+				InitContainers: []core.Container{{
+					Name: containerName,
+				}},
+			},
+		},
+		{
+			expectError:    false,
+			featureEnabled: true,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					HostNetwork: true,
+					WindowsOptions: &core.WindowsSecurityContextOptions{
+						HostProcess: &trueVar,
+					},
+				},
+				Containers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+				InitContainers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &falseVar,
+						},
+					},
+				}},
+			},
+		},
+		{
+			expectError:    false,
+			featureEnabled: true,
+			podSpec: &core.PodSpec{
+				SecurityContext: &core.PodSecurityContext{
+					HostNetwork: true,
+					WindowsOptions: &core.WindowsSecurityContextOptions{
+						HostProcess: &trueVar,
+					},
+				},
+				Containers: []core.Container{{
+					Name: containerName,
+					SecurityContext: &core.SecurityContext{
+						WindowsOptions: &core.WindowsSecurityContextOptions{
+							HostProcess: &trueVar,
+						},
+					},
+				}},
+				InitContainers: []core.Container{{
+					Name: containerName,
+				}},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.WindowsHostProcessContainers, testCase.featureEnabled)()
+
+			errs := ValidateWindowsHostProcessPod(testCase.podSpec)
+			if testCase.expectError && len(errs) == 0 {
+				t.Errorf("Unexpected success")
+			}
+			if !testCase.expectError && len(errs) != 0 {
+				t.Errorf("Unexpected error(s): %v", errs)
+			}
+		})
+	}
+}
