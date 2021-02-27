@@ -3308,7 +3308,7 @@ func ValidatePodSpec(spec *core.PodSpec, podMeta *metav1.ObjectMeta, fldPath *fi
 	allErrs = append(allErrs, validatePodDNSConfig(spec.DNSConfig, &spec.DNSPolicy, fldPath.Child("dnsConfig"))...)
 	allErrs = append(allErrs, validateReadinessGates(spec.ReadinessGates, fldPath.Child("readinessGates"))...)
 	allErrs = append(allErrs, validateTopologySpreadConstraints(spec.TopologySpreadConstraints, fldPath.Child("topologySpreadConstraints"))...)
-	allErrs = append(allErrs, ValidateWindowsHostProcessPod(spec)...)
+	allErrs = append(allErrs, validateWindowsHostProcessPod(spec, fldPath)...)
 	if len(spec.ServiceAccountName) > 0 {
 		for _, msg := range ValidateServiceAccountName(spec.ServiceAccountName, false) {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("serviceAccountName"), spec.ServiceAccountName, msg))
@@ -5925,8 +5925,52 @@ func validateWindowsSecurityContextOptions(windowsOptions *core.WindowsSecurityC
 	return allErrs
 }
 
-func ValidateWindowsHostProcessPod(podSpec *core.PodSpec) field.ErrorList {
+func validateWindowsHostProcessPod(podSpec *core.PodSpec, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
+
+	// First check if Pod contains any 'HostProcess' containers
+	containerCount := 0
+	hostProcessContainerCount := 0
+
+	podHostProcess := false
+	if podSpec.SecurityContext != nil && podSpec.SecurityContext.WindowsOptions != nil && podSpec.SecurityContext.WindowsOptions.HostProcess != nil {
+		podHostProcess = *podSpec.SecurityContext.WindowsOptions.HostProcess
+	}
+
+	hostNetwork := false
+	if podSpec.SecurityContext != nil && podSpec.SecurityContext.HostNetwork == true {
+		hostNetwork = true
+	}
+
+	// Note: Pod-wide WindowsSecurityContextOptions are inherited by containers that do not explicitly set them.
+	for _, c := range append(podSpec.Containers, podSpec.InitContainers...) {
+		containerCount++
+		if c.SecurityContext != nil && c.SecurityContext.WindowsOptions != nil {
+			if c.SecurityContext.WindowsOptions != nil && *c.SecurityContext.WindowsOptions.HostProcess {
+				hostProcessContainerCount++
+			}
+		} else if podHostProcess {
+			hostProcessContainerCount++
+		}
+	}
+
+	if hostProcessContainerCount > 0 {
+		if !utilfeature.DefaultFeatureGate.Enabled(features.WindowsHostProcessContainers) {
+			errMsg := "Pod containes Windows HostProcess containers but feature gate 'WindowsHostProcessContainers' is not enabled"
+			allErrs = append(allErrs, field.Forbidden(fieldPath, errMsg))
+		}
+
+		if hostProcessContainerCount != containerCount {
+			errMsg := "If Pod contains any HostProcess containers then all containers must be HostProcess containers"
+			allErrs = append(allErrs, field.Forbidden(fieldPath, errMsg))
+		}
+
+		if hostNetwork != true {
+			errMsg := "PodSecurityContext.HostNetwork must be set if Pod contains any HostProcess containers"
+			allErrs = append(allErrs, field.Forbidden(fieldPath, errMsg))
+		}
+	}
+
 	return allErrs
 }
 
