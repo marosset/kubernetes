@@ -5928,7 +5928,6 @@ func validateWindowsSecurityContextOptions(windowsOptions *core.WindowsSecurityC
 func validateWindowsHostProcessPod(podSpec *core.PodSpec, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	// First check if Pod contains any 'HostProcess' containers
 	containerCount := 0
 	hostProcessContainerCount := 0
 
@@ -5955,16 +5954,19 @@ func validateWindowsHostProcessPod(podSpec *core.PodSpec, fieldPath *field.Path)
 	}
 
 	if hostProcessContainerCount > 0 {
+		// Fail Pod validation if feature is not enabled instead of dropping fields based on PRR reivew.
 		if !utilfeature.DefaultFeatureGate.Enabled(features.WindowsHostProcessContainers) {
 			errMsg := "Pod containes Windows HostProcess containers but feature gate 'WindowsHostProcessContainers' is not enabled"
 			allErrs = append(allErrs, field.Forbidden(fieldPath, errMsg))
 		}
 
+		// At present Windows Pods must container only HostProcess containers or regular containers.
 		if hostProcessContainerCount != containerCount {
 			errMsg := "If Pod contains any HostProcess containers then all containers must be HostProcess containers"
 			allErrs = append(allErrs, field.Forbidden(fieldPath, errMsg))
 		}
 
+		// At present Windows Pods which contain HostProcess containers must also set HostNetwork.
 		if hostNetwork != true {
 			errMsg := "PodSecurityContext.HostNetwork must be set if Pod contains any HostProcess containers"
 			allErrs = append(allErrs, field.Forbidden(fieldPath, errMsg))
