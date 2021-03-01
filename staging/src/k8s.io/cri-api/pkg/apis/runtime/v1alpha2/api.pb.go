@@ -2930,8 +2930,8 @@ type WindowsSandboxSecurityContext struct {
 	RunAsUsername string `protobuf:"bytes,1,opt,name=run_as_username,json=runAsUsername,proto3" json:"run_as_username,omitempty"`
 	// The contents of the GMSA credential spec to use to run this container.
 	CredentialSpec string `protobuf:"bytes,2,opt,name=credential_spec,json=credentialSpec,proto3" json:"credential_spec,omitempty"`
-	// If set runtime must run container as a 'host process' container;
-	// otherwise, the runtime MUST return error.
+	// Indicates whether the sandbox will be asked to run any HostProcess
+	// containers.
 	HostProcess          bool     `protobuf:"varint,3,opt,name=host_process,json=hostProcess,proto3" json:"host_process,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -3046,8 +3046,7 @@ type WindowsContainerSecurityContext struct {
 	RunAsUsername string `protobuf:"bytes,1,opt,name=run_as_username,json=runAsUsername,proto3" json:"run_as_username,omitempty"`
 	// The contents of the GMSA credential spec to use to run this container.
 	CredentialSpec string `protobuf:"bytes,2,opt,name=credential_spec,json=credentialSpec,proto3" json:"credential_spec,omitempty"`
-	// If set runtime must run container as a 'host process' container;
-	// otherwise, the runtime MUST return error.
+	// Indicates whether a container is to be run as a HostProcess container.
 	HostProcess          bool     `protobuf:"varint,3,opt,name=host_process,json=hostProcess,proto3" json:"host_process,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

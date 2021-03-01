@@ -706,8 +706,8 @@ message WindowsSandboxSecurityContext {
     // The contents of the GMSA credential spec to use to run this container.
     string credential_spec = 2;
 
-    // If set runtime must run container as a 'host process' container; 
-    // otherwise, the runtime MUST return error.
+    // Indicates whether the sandbox will be asked to run any HostProcess
+    // containers.
     bool host_process = 3;
 }
 
@@ -728,8 +728,7 @@ message WindowsContainerSecurityContext {
     // The contents of the GMSA credential spec to use to run this container.
     string credential_spec = 2;
 
-    // If set runtime must run container as a 'host process' container; 
-    // otherwise, the runtime MUST return error.
+    // Indicates whether a container is to be run as a HostProcess container.
     bool host_process = 3;
 }
 
