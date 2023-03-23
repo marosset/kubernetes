@@ -39,6 +39,12 @@ Consumes specified amount of megabytes for durationSec seconds.
 Consume Memory uses stress tool (stress -m 1 --vm-bytes megabytes --vm-hang 0 -t durationSec).
 Request leading to consuming more memory then container limit will be ignored.
 
+#### Windows
+
+On Windows it is also possible to specify the allocation type of the memory to be consumed.
+To specify the allocation type set the environment variable `MEMORY_ALLOCATION_TYPE` to one of -[a | d | l | m | r | s | v].
+For details on each of these allocation types see [here](https://learn.microsoft.com/en-us/sysinternals/downloads/testlimit)
+
 ### Bump value of a fake custom metric
 - suffix "BumpMetric",
 - parameters "metric", "delta" and "durationSec".

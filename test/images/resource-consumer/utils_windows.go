@@ -21,6 +21,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
 	"time"
@@ -33,11 +34,18 @@ var (
 
 // ConsumeMem consumes a given number of megabytes for the specified duration.
 func ConsumeMem(megabytes int, durationSec int) {
-	log.Printf("ConsumeMem megabytes: %v, durationSec: %v", megabytes, durationSec)
+	// See https://learn.microsoft.com/en-us/sysinternals/downloads/testlimit
+	// for more details on the different memory allocation types.
+	memoryAlloactionType := "-d"
+	if os.Getenv("MEMEORY_ALLOCATION_TYPE") != "" {
+		memoryAlloactionType = os.Getenv("MEMEORY_ALLOCATION_TYPE")
+	}
+
+	log.Printf("ConsumeMem megabytes: %v, durationSec: %v, alloationTyle", megabytes, durationSec, memoryAlloactionType)
 	megabytesString := strconv.Itoa(megabytes)
 	durationSecString := strconv.Itoa(durationSec)
 	// creating new consume memory process
-	consumeMem := exec.Command(consumeMemBinary, "-accepteula", "-d", megabytesString, "-e", "0", durationSecString, "-c", "1")
+	consumeMem := exec.Command(consumeMemBinary, "-accepteula", memoryAlloactionType, megabytesString, "-e", "0", durationSecString, "-c", "1")
 	err := consumeMem.Start()
 	if err != nil {
 		log.Printf("Error while consuming memory: %v", err)
