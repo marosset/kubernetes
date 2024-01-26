@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 /*
 Copyright 2021 The Kubernetes Authors.
 
@@ -22,9 +25,16 @@ import (
 	"time"
 
 	"github.com/Microsoft/hcsshim"
+	cadvisorapiv2 "github.com/google/cadvisor/info/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	statsapi "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 	testingclock "k8s.io/utils/clock/testing"
+	"k8s.io/kubernetes/pkg/kubelet/kuberuntime"
+	"k8s.io/kubernetes/pkg/volume"
+	"k8s.io/apimachinery/pkg/types"
+	kubecontainertest "k8s.io/kubernetes/pkg/kubelet/container/testing"
+
 )
 
 type fakeNetworkStatsProvider struct {
@@ -425,4 +435,73 @@ func Test_criStatsProvider_listContainerNetworkStats(t *testing.T) {
 
 func toP(i uint64) *uint64 {
 	return &i
+}
+
+func Test_criStatsProvider_makeWinContainerStats(t *testing.T) {
+	fakeClock := testingclock.NewFakeClock(time.Time{})
+	p0StartTime
+	c0LogStats := makeFakeLogStats(100)
+	fakeOS := &kubecontainertest.FakeOS{}
+	fakeStats := map[string]*volume.Metrics{
+		kuberuntime.BuildContainerLogsDirectory("sb0-ns", "sb0-name", types.UID("sb0-uid"), "c0"): c0LogStats,
+	}
+	fakeHostStatsProvider := NewFakeHostStatsProviderWithData(fakeStats, fakeOS)
+
+	tests := []struct {
+		name	string
+		stats	*runtimeapi.WindowsContainerStats
+		container *runtimeapi.Container
+		rootFsInfo *cadvisorapiv2.FsInfo
+		meta *runtimeapi.PodSandboxMetadata
+		want *statsapi.ContainerStats
+		wantErr bool
+	}{ 
+		{
+			name: "basic example",
+			stats: &runtimeapi.WindowsContainerStats{
+				Attributes: &runtimeapi.ContainerAttributes{
+					Metadata: &runtimeapi.ContainerMetadata{
+						Name: "c0",
+					},
+				},
+			},
+			container: &runtimeapi.Container{
+				CreatedAt: fakeClock.Now().Unix(),
+				Metadata: &runtimeapi.ContainerMetadata{
+					Name: "c0",
+				},
+			},
+			rootFsInfo: &cadvisorapiv2.FsInfo{
+			},
+			meta: &runtimeapi.PodSandboxMetadata{
+				Namespace: "sb0-ns",
+				Name: "sb0-name",
+				Uid: "sb0-uid",
+			},
+			want: &statsapi.ContainerStats{
+				Name: "c0",
+				StartTime: v1.NewTime(fakeClock.Now()),
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &criStatsProvider{
+				clock: fakeClock,
+				hostStatsProvider: fakeHostStatsProvider,
+			}
+
+			got, err := p.makeWinContainerStats(tt.stats, tt.container, tt.rootFsInfo, make(map[runtimeapi.FilesystemIdentifier]*cadvisorapiv2.FsInfo), tt.meta)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("makeWinContainerStats() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("makeWinContainerStats() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
