@@ -99,8 +99,8 @@ const (
 	SystemContainerMisc = "misc"
 	// SystemContainerPods is the container name for the system container tracking user pods.
 	SystemContainerPods = "pods"
-	// SystemContainerPhysicalMemory is the container name for the system container tracking physical memory usage (only used on Windows).
-	SystemContainerPhysicalMemory = "physical-memory"
+	// SystemContainerPhysicalMemory is the container name for the system container tracking global memory usage (only used on Windows).
+	SystemContainerWindowsGloballMemory = "windows-global-memory"
 )
 
 // ProcessStats are stats pertaining to processes.

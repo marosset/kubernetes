@@ -53,16 +53,20 @@ func (m *windowsMemoryThresholdNotifier) Start() {
 		for true {
 			time.Sleep(notifierRefreshInterval)
 
-			// Get global memory usage on Windows
-			availablePhysMem, totalPhysMem, err := winstats.GetAvailableAndTotalPhysicalMemory()
+			// Get global commit limit
+			perfInfo, err := winstats.GetPerformanceInfo()
 			if err != nil {
 				klog.ErrorS(err, "Eviction manager: error getting global memory status for node")
 			}
 
-			capacity := resource.NewQuantity(int64(totalPhysMem), resource.BinarySI)
+			commmiLimitBytes := perfInfo.CommitLimitPages * perfInfo.PageSize
+			capacity := resource.NewQuantity(int64(commmiLimitBytes), resource.BinarySI)
 			evictionThresholdQuantity := evictionapi.GetThresholdQuantity(m.threshold.Value, capacity)
 
-			if availablePhysMem <= uint64(evictionThresholdQuantity.Value()) {
+			commitTotalBytes := perfInfo.CommitTotalPages * perfInfo.PageSize
+			commitAvailableBytes := commmiLimitBytes - commitTotalBytes
+
+			if commitAvailableBytes <= uint64(evictionThresholdQuantity.Value()) {
 				m.events <- struct{}{}
 			}
 		}

@@ -849,7 +849,7 @@ func makeSignalObservations(summary *statsapi.Summary) (signalObservations, stat
 	if runtime.GOOS == "windows" {
 
 		klog.Info("Eviction manager: building memory signal obsvervations for windows")
-		sysContainer, err := getSysContainer(summary.Node.SystemContainers, statsapi.SystemContainerPhysicalMemory)
+		sysContainer, err := getSysContainer(summary.Node.SystemContainers, statsapi.SystemContainerWindowsGloballMemory)
 		if err != nil {
 			klog.ErrorS(err, "Eviction manager: failed to construct signal", "signal", evictionapi.SignalMemoryAvailable)
 		}
