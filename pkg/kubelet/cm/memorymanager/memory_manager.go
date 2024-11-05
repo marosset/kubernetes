@@ -19,6 +19,7 @@ package memorymanager
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 
 	cadvisorapi "github.com/google/cadvisor/info/v1"
@@ -143,6 +144,10 @@ func NewManager(policyName string, machineInfo *cadvisorapi.MachineInfo, nodeAll
 		policy = NewPolicyNone()
 
 	case policyTypeStatic:
+		if runtime.GOOS == "windows" {
+			return nil, fmt.Errorf("policy \"%s\" is not not available on Windows", policyTypeStatic)
+		}
+
 		systemReserved, err := getSystemReservedMemory(machineInfo, nodeAllocatableReservation, reservedMemory)
 		if err != nil {
 			return nil, err
@@ -151,6 +156,13 @@ func NewManager(policyName string, machineInfo *cadvisorapi.MachineInfo, nodeAll
 		policy, err = NewPolicyStatic(machineInfo, systemReserved, affinity)
 		if err != nil {
 			return nil, err
+		}
+
+	case policyTypeBestEffort:
+		if runtime.GOOS == "windows" {
+
+		} else {
+			return nil, fmt.Errorf("policy \"%s\" is not avaiable for platform \"%s\"", policyTypeBestEffort, runtime.GOOS)
 		}
 
 	default:

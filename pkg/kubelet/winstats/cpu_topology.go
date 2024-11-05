@@ -2,15 +2,17 @@ package winstats
 
 import (
 	"fmt"
-	cadvisorapi "github.com/google/cadvisor/info/v1"
-	"k8s.io/klog/v2"
 	"syscall"
 	"unsafe"
+
+	cadvisorapi "github.com/google/cadvisor/info/v1"
+	"k8s.io/klog/v2"
 )
 
 var (
 	procGetLogicalProcessorInformationEx = modkernel32.NewProc("GetLogicalProcessorInformationEx")
 	getNumaAvailableMemoryNodeEx         = modkernel32.NewProc("GetNumaAvailableMemoryNodeEx")
+	procGetNumaNodeProcessorMaskEx       = modkernel32.NewProc("GetNumaNodeProcessorMaskEx")
 )
 
 type RelationType int
@@ -247,4 +249,18 @@ func convertWinApiToCadvisorApi(buffer []byte) (int, int, []cadvisorapi.Node, er
 	}
 
 	return numOfcores, numofSockets, nodes, nil
+}
+
+func GetCPUsforNUMANode(nodeNumber uint16) (*GROUP_AFFINITY, error) {
+	var affinity GROUP_AFFINITY
+
+	r1, _, err := procGetNumaNodeProcessorMaskEx.Call(
+		uintptr(nodeNumber),
+		uintptr(unsafe.Pointer(&affinity)),
+	)
+	if r1 != 0 {
+		return nil, fmt.Errorf("Error getting CPU mask for NUMA node %d: %v", nodeNumber, err)
+	}
+
+	return &affinity, nil
 }
