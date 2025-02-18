@@ -119,7 +119,7 @@ func TestWindowsChmod(t *testing.T) {
 		require.NoError(t, err, "Failed to create temporary directory.")
 		defer os.RemoveAll(tempDir)
 
-		// Set the file GROUP to BUILTIN\Administrators (BA) for test determinism and
+		// Set the file GROUP to BUILTIN\Administrators (BA) for test determinism
 		err = setGroupInfo(tempDir, "S-1-5-32-544")
 		require.NoError(t, err, "Failed to set group for directory.")
 
@@ -128,6 +128,10 @@ func TestWindowsChmod(t *testing.T) {
 
 		owner, descriptor, err := getPermissionsInfo(tempDir)
 		require.NoError(t, err, "Failed to get permissions for directory.")
+
+		if owner == "S-1-5-32-544" {
+			owner = "BA"
+		}
 
 		expectedDescriptor := strings.ReplaceAll(testCase.expectedDescriptor, "OWNER", owner)
 
@@ -195,6 +199,13 @@ func TestDeleteFilePermissions(t *testing.T) {
 	require.NoError(t, err, "Failed to create file in directory.")
 
 	err = os.Remove(filePath)
+	if err != nil {
+		// temp logging to figure out why file is getting delete in CI when it should not
+		_, folderDescriptior, _ := getPermissionsInfo(tempDir)
+		t.Logf("Folder descriptor: %s", folderDescriptior)
+		_, fileDescriptior, _ := getPermissionsInfo(filePath)
+		t.Logf("File descriptor: %s", fileDescriptior)
+	}
 	require.Error(t, err, "Expected expected error when trying to remove file in directory.")
 
 	err = Chmod(tempDir, 0770)
