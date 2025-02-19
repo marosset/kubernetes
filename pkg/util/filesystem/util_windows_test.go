@@ -24,6 +24,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -188,29 +189,35 @@ func setGroupInfo(path, group string) error {
 // TestDeleteFilePermissions tests that when a folder's permissions are set to 0660, child items
 // cannot be deleted in the folder but when a folder's permissions are set to 0770, child items can be deleted.
 func TestDeleteFilePermissions(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "test-dir")
+	testDir, err := os.MkdirTemp("", "test-dir")
 	require.NoError(t, err, "Failed to create temporary directory.")
 
-	err = Chmod(tempDir, 0660)
+	// Disable inheritance for %TEMP% since this tests runs as a system account in CI
+	// which has access to all files and folders by default
+	cmd := exec.Command("icacls.exe", testDir, "/inheritance:d")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "Failed to disable inheritance for directory: %s", output)
+
+	err = Chmod(testDir, 0660)
 	require.NoError(t, err, "Failed to set permissions for directory to 0660.")
 
-	filePath := filepath.Join(tempDir, "test-file")
+	filePath := filepath.Join(testDir, "test-file")
 	err = os.WriteFile(filePath, []byte("test"), 0440)
 	require.NoError(t, err, "Failed to create file in directory.")
 
 	// temp logging to figure out why file is getting delete in CI when it should not
-	_, folderDescriptior, _ := getPermissionsInfo(tempDir)
+	_, folderDescriptior, _ := getPermissionsInfo(testDir)
 	_, fileDescriptior, _ := getPermissionsInfo(filePath)
 	err = os.Remove(filePath)
 	require.Error(t, err, "Expected expected error when trying to remove file in directory. Folder perms %s, file perms %s", folderDescriptior, fileDescriptior)
 
-	err = Chmod(tempDir, 0770)
+	err = Chmod(testDir, 0770)
 	require.NoError(t, err, "Failed to set permissions for directory to 0770.")
 
 	err = os.Remove(filePath)
 	require.NoError(t, err, "Failed to remove file in directory.")
 
-	err = os.Remove(tempDir)
+	err = os.Remove(testDir)
 	require.NoError(t, err, "Failed to remove directory.")
 }
 
