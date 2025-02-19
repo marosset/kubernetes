@@ -198,15 +198,11 @@ func TestDeleteFilePermissions(t *testing.T) {
 	err = os.WriteFile(filePath, []byte("test"), 0440)
 	require.NoError(t, err, "Failed to create file in directory.")
 
+	// temp logging to figure out why file is getting delete in CI when it should not
+	_, folderDescriptior, _ := getPermissionsInfo(tempDir)
+	_, fileDescriptior, _ := getPermissionsInfo(filePath)
 	err = os.Remove(filePath)
-	if err != nil {
-		// temp logging to figure out why file is getting delete in CI when it should not
-		_, folderDescriptior, _ := getPermissionsInfo(tempDir)
-		t.Logf("Folder descriptor: %s", folderDescriptior)
-		_, fileDescriptior, _ := getPermissionsInfo(filePath)
-		t.Logf("File descriptor: %s", fileDescriptior)
-	}
-	require.Error(t, err, "Expected expected error when trying to remove file in directory.")
+	require.Error(t, err, "Expected expected error when trying to remove file in directory. Folder perms %s, file perms %s", folderDescriptior, fileDescriptior)
 
 	err = Chmod(tempDir, 0770)
 	require.NoError(t, err, "Failed to set permissions for directory to 0770.")
