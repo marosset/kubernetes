@@ -192,9 +192,9 @@ func TestDeleteFilePermissions(t *testing.T) {
 	testDir, err := os.MkdirTemp("", "test-dir")
 	require.NoError(t, err, "Failed to create temporary directory.")
 
-	// Disable inheritance for %TEMP% since this tests runs as a system account in CI
-	// which has access to all files and folders by default
-	cmd := exec.Command("icacls.exe", testDir, "/inheritance:d")
+	// Remove inherited permissions for %TEMP% since this tests runs as a system account
+	// in CI which has access to all files and folders by default
+	cmd := exec.Command("icacls.exe", testDir, "/inheritance:r")
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "Failed to disable inheritance for directory: %s", output)
 
