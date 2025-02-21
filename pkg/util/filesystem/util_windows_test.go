@@ -198,7 +198,11 @@ func TestDeleteFilePermissions(t *testing.T) {
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "Failed to disable inheritance for directory: %s", output)
 
+	_, afterInheritanceRemoval, _ := getPermissionsInfo(testDir)
 	err = Chmod(testDir, 0660)
+	_, afterChmod, _ := getPermissionsInfo(testDir)
+	require.Fail(t, fmt.Sprintf("Permissions after removing inheritance %s, after chmod %s", afterInheritanceRemoval, afterChmod))
+
 	require.NoError(t, err, "Failed to set permissions for directory to 0660.")
 
 	filePath := filepath.Join(testDir, "test-file")
