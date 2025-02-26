@@ -24,7 +24,6 @@ import (
 	"math/rand"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -161,6 +160,34 @@ func getPermissionsInfo(path string) (string, string, error) {
 	return owner.String(), sdString, nil
 }
 
+func removeAllPermissions(path string) error {
+	/*
+		sd, err := windows.GetNamedSecurityInfo(
+			path,
+			windows.SE_FILE_OBJECT,
+			windows.DACL_SECURITY_INFORMATION|windows.OWNER_SECURITY_INFORMATION|windows.GROUP_SECURITY_INFORMATION)
+			if err != nil {
+				return fmt.Errorf("Error getting security descriptor for file %s: %v", path, err)
+			}
+	*/
+	// create a new empty DACL
+	var emptyAcl *windows.ACL
+	err := windows.SetNamedSecurityInfo(
+		path,
+		windows.SE_FILE_OBJECT,
+		windows.DACL_SECURITY_INFORMATION,
+		nil,      // owner SID
+		nil,      // group SID
+		emptyAcl, // DACL
+		nil,      //SACL
+	)
+	if err != nil {
+		return fmt.Errorf("Error setting empty DACL for file %s: %v", path, err)
+	}
+
+	return nil
+}
+
 // Sets the GROUP of a file or a directory to the specified group
 func setGroupInfo(path, group string) error {
 	groupSID, err := windows.StringToSid(group)
@@ -194,14 +221,13 @@ func TestDeleteFilePermissions(t *testing.T) {
 
 	// Remove inherited permissions for %TEMP% since this tests runs as a system account
 	// in CI which has access to all files and folders by default
-	cmd := exec.Command("icacls.exe", testDir, "/inheritance:r")
-	output, err := cmd.CombinedOutput()
-	require.NoError(t, err, "Failed to disable inheritance for directory: %s", output)
+	err = removeAllPermissions(testDir)
+	require.NoError(t, err, "Failed to remove permissions for directory.")
 
-	_, afterInheritanceRemoval, _ := getPermissionsInfo(testDir)
+	//	_, afterInheritanceRemoval, _ := getPermissionsInfo(testDir)
 	err = Chmod(testDir, 0660)
-	_, afterChmod, _ := getPermissionsInfo(testDir)
-	require.Fail(t, fmt.Sprintf("Permissions after removing inheritance %s, after chmod %s", afterInheritanceRemoval, afterChmod))
+	//	_, afterChmod, _ := getPermissionsInfo(testDir)
+	//	require.Fail(t, fmt.Sprintf("Permissions after removing inheritance %s, after chmod %s", afterInheritanceRemoval, afterChmod))
 
 	require.NoError(t, err, "Failed to set permissions for directory to 0660.")
 
